@@ -1,7 +1,7 @@
 <template>
   <q-layout view="lHh Lpr lff">
     <MenuUsuario />
-    <HeaderPrincipal />
+    <HeaderUsuario />
     <q-page-container>
       <q-page padding>
         <router-view />
@@ -11,18 +11,34 @@
 </template>
 
 <script>
-import { ref } from "vue";
 import MenuUsuario from "components/MenuUsuario.vue";
-import HeaderPrincipal from "components/HeaderPrincipal.vue";
+import HeaderUsuario from "src/components/HeaderUsuario.vue";
+import { onBeforeMount } from "@vue/runtime-core";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "vue-router";
+import { useSesion } from "stores/sesion";
 export default {
   components: {
     MenuUsuario,
-    HeaderPrincipal,
+    HeaderUsuario,
   },
   setup() {
-    return {
-      drawer: ref(false),
+    const auth = getAuth();
+    const sesion = useSesion();
+    const router = useRouter();
+    const authListener = () => {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          sesion.sesion = user;
+        } else {
+          router.push({ name: "/" });
+        }
+      });
     };
+    onBeforeMount(() => {
+      authListener();
+    });
+    return {};
   },
 };
 </script>

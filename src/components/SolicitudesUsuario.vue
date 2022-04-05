@@ -4,10 +4,9 @@
       grid
       :card-container-class="cardContainerClass"
       title="Solicitudes Realizadas"
-      :rows="rows"
+      :rows="solicitudes"
       :columns="columns"
-      row-key="name"
-      :filter="filter"
+      row-key="id"
       hide-header
       v-model:pagination="pagination"
       :rows-per-page-options="rowsPerPageOptions"
@@ -20,11 +19,23 @@
               <br />
               <strong>{{ props.row.coordinacion }}</strong>
               <br />
-              <strong>{{ tipoProblema(props.row.tipo) }}</strong>
+              <strong>{{ props.row.problema }}</strong>
             </q-card-section>
             <q-separator />
             <q-card-section class="flex flex-center" style="font-size: 20px">
-              <div>{{ props.row.comentarios }}</div>
+              <div>{{ props.row.comentarioAdicional }}</div>
+            </q-card-section>
+            <q-separator />
+            <q-card-section
+              v-show="props.row.administrador"
+              class="flex flex-center"
+              style="font-size: 20px"
+            >
+              <div>
+                {{
+                  `Tu solicitud esta siendo atendida por: ${props.row.administrador} `
+                }}
+              </div>
             </q-card-section>
             <q-separator />
             <q-card-section class="flex flex-center" style="font-size: 20px">
@@ -32,8 +43,14 @@
                 <template v-slot:separator>
                   <q-icon size="1.5em" name="chevron_right" color="primary" />
                 </template>
-                <q-breadcrumbs-el icon="hourglass_empty" />
-                <q-breadcrumbs-el icon="check_circle" />
+                <q-breadcrumbs-el
+                  icon="hourglass_empty"
+                  :class="props.row.enProceso ? 'text-blue' : ''"
+                />
+                <q-breadcrumbs-el
+                  icon="check_circle"
+                  :class="props.row.terminada ? 'text-green' : ''"
+                />
                 <q-breadcrumbs-el icon="verified" />
               </q-breadcrumbs>
             </q-card-section>
@@ -87,21 +104,9 @@ const rows = [
 export default {
   setup() {
     return {
+      solicitudes: store.solicitudes,
       columns,
-      rows,
     };
-  },
-  methods: {
-    tipoProblema(tipo) {
-      if (tipo == 0) {
-        return "Equipo";
-      }
-      if (tipo == 1) {
-        return "Internet";
-      } else {
-        return "otro";
-      }
-    },
   },
 };
 </script>

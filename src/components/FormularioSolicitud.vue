@@ -45,14 +45,24 @@
 
 <script>
 import { ref } from "vue";
+import { v4 as uuidv4 } from "uuid";
+import { useQuasar } from "quasar";
 
 export default {
   setup() {
+    const coordinacion = ref(null);
+    const problema = ref(null);
+    const comentarioAdicional = ref("");
+    const $q = useQuasar();
+    const resetForm = function () {
+      coordinacion.value = null;
+      problema.value = null;
+      comentarioAdicional.value = "";
+    };
     return {
-      name,
-      age,
-      accept,
-      coordinacion: ref(null),
+      problema,
+      coordinacion,
+      comentarioAdicional,
       coordinaciones: [
         "Gerencia",
         "RRHH",
@@ -60,14 +70,28 @@ export default {
         "Recaudacion",
         "Planificacion y Presupuesto",
       ],
-      problema: ref(null),
       tipoDeProblema: ["Internet", "Equipo", "Otro"],
-      comentarioAdicional: ref(""),
+
+      onSubmit() {
+        store.solicitudes.push({
+          coordinacion: coordinacion.value,
+          problema: problema.value,
+          comentarioAdicional: comentarioAdicional.value,
+          enProceso: false,
+          terminada: false,
+          solicitante: null,
+          id: uuidv4(),
+          administrador: null,
+        });
+        $q.notify({
+          type: "positive",
+          message: "Su solicitud fue enviada con exito.",
+        });
+        resetForm();
+      },
 
       onReset() {
-        name.value = null;
-        age.value = null;
-        accept.value = false;
+        resetForm();
       },
     };
   },

@@ -4,38 +4,82 @@
       grid
       :card-container-class="cardContainerClass"
       title="Solicitudes disponibles"
-      :rows="rows"
+      :rows="solicitudes"
       :columns="columns"
       row-key="name"
       :filter="filter"
       hide-header
       v-model:pagination="pagination"
       :rows-per-page-options="rowsPerPageOptions"
+      no-data-label="Sin solicitudes por atender"
     >
+      <template v-slot:top-right>
+        <q-input
+          borderless
+          dense
+          debounce="300"
+          v-model="filter"
+          placeholder="Buscar"
+        >
+          <template v-slot:append>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </template>
       <template v-slot:item="props">
         <div class="q-pa-xs col-xs-12 col-sm-6 col-md-4">
-          <q-card>
-            <q-card-section class="text-center">
-              Solicitud pendiente
-              <br />
-              <strong>{{ props.row.coordinacion }}</strong>
-              <br />
-              <strong>{{ tipoProblema(props.row.tipo) }}</strong>
+          <q-card class="my-card" flat bordered>
+            <q-card-section horizontal>
+              <q-card-section class="q-pt-xs">
+                <div class="text-overline">{{ props.row.coordinacion }}</div>
+                <div class="text-h5 q-mt-sm q-mb-xs">
+                  {{ props.row.problema }}
+                </div>
+                <div class="text-caption text-grey">
+                  {{
+                    props.row.comentarioAdicional
+                      ? props.row.comentarioAdicional
+                      : "Sin comentarios adicionales"
+                  }}
+                </div>
+              </q-card-section>
+
+              <q-card-section class="col-5 flex flex-center">
+                <q-img
+                  class="rounded-borders"
+                  src="https://cdn.quasar.dev/img/parallax2.jpg"
+                />
+              </q-card-section>
             </q-card-section>
             <q-separator />
-            <q-card-section class="flex flex-center" style="font-size: 20px">
-              <div>{{ props.row.comentarios }}</div>
+            <q-card-section>
+              {{
+                props.row.administrador
+                  ? `Esta solicitud esta siendo atendida por: ${props.row.administrador}`
+                  : "Solicitud sin atender"
+              }}
             </q-card-section>
+
             <q-separator />
-            <q-card-section class="flex flex-center" style="font-size: 20px">
-              <q-toggle v-model="props.row.enProceso" icon="alarm" />
+
+            <q-card-actions>
               <q-toggle
+                v-show="
+                  (!props.row.enProceso && !props.row.terminada) ||
+                  (props.row.enProceso && !props.row.terminada)
+                "
+                v-model="props.row.enProceso"
+                icon="alarm"
+                @click="props.row.administrador = admiID"
+              />
+              <q-toggle
+                v-show="props.row.enProceso"
                 v-model="props.row.terminada"
                 checked-icon="check"
                 color="green"
                 unchecked-icon="clear"
               />
-            </q-card-section>
+            </q-card-actions>
           </q-card>
         </div>
       </template>
@@ -52,63 +96,64 @@ const columns = [
   { name: "terminada", label: "terminada", field: "terminada" },
 ];
 
-const rows = [
-  {
-    coordinacion: "Gerencia",
-    tipo: 0,
-    comentarios: "la compu no enciente",
-    enProceso: false,
-    terminada: false,
-  },
-  {
-    coordinacion: "enfermeria",
-    tipo: 1,
-    comentarios: "se daño un cable",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "RRHH",
-    tipo: 2,
-    comentarios: "ratio",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "Secretaria",
-    tipo: 1,
-    comentarios: "ratio",
-    enProceso: false,
-    terminada: true,
-  },
-];
-
+import { admiStore } from "stores/admiStore";
+import { useQuasar } from "quasar";
+import { ref } from "@vue/reactivity";
+import { computed, onMounted, watch } from "@vue/runtime-core";
 export default {
   setup() {
+    const $q = useQuasar();
+    const useAdmiStore = admiStore();
+    const filter = ref("");
+    function getItemsPerPage() {
+      if ($q.screen.lt.sm) {
+        return 3;
+      }
+      if ($q.screen.lt.md) {
+        return 6;
+      }
+      return 9;
+    }
+    const pagination = ref({
+      page: 1,
+      rowsPerPage: getItemsPerPage(),
+    });
+
+    watch(
+      () => $q.screen.name,
+      () => {
+        pagination.value.rowsPerPage = getItemsPerPage();
+      }
+    );
     return {
+      admiID: useAdmiStore.admiID,
+      solicitudes: store.solicitudesSinCompletar,
+      filter,
+      store,
+      pagination,
       columns,
-      rows,
+      cardContainerClass: computed(() => {
+        return $q.screen.gt.xs
+          ? "grid-masonry grid-masonry--" + ($q.screen.gt.sm ? "3" : "2")
+          : null;
+      }),
+      rowsPerPageOptions: computed(() => {
+        return $q.screen.gt.xs ? ($q.screen.gt.sm ? [3, 6, 9] : [3, 6]) : [3];
+      }),
     };
   },
-  methods: {
-    tipoProblema(tipo) {
-      if (tipo == 0) {
-        return "Equipo";
-      }
-      if (tipo == 1) {
-        return "Internet";
-      } else {
-        return "otro";
-      }
-    },
-  },
+  methods: {},
 };
 </script>
 
 <style lang="sass">
+.my-card
+  width: 100%
+  max-width: 350px
+
 .grid-masonry
   flex-direction: column
-  height: 700px
+  height: 500px
 
   &--2
     > div

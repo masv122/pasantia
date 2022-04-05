@@ -39,7 +39,7 @@
             <q-badge color="red" text-color="white" floating> 2 </q-badge>
             <q-tooltip>Notificaciones</q-tooltip>
           </q-btn>
-          <q-btn round flat>
+          <q-btn :to="{ name: 'usuario' }" round flat>
             <q-avatar>
               <q-icon name="admin_panel_settings" size="2em" />
             </q-avatar>
@@ -97,6 +97,7 @@
             no-caps
             size="26px"
             class="GPL__side-btn"
+            :to="{ name: 'gestion de cuentas' }"
           >
             <q-icon size="22px" name="manage_accounts" />
             <div class="GPL__side-btn__label">Gestion de cuentas</div>
@@ -108,44 +109,27 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
+import { v4 as uuidv4 } from "uuid";
+import { admiStore } from "stores/admiStore";
 export default {
   name: "GooglePhotosLayout",
   setup() {
+    const store = admiStore();
     const leftDrawerOpen = ref(false);
     const search = ref("");
-    const storage = ref(0.26);
     function toggleLeftDrawer() {
       leftDrawerOpen.value = !leftDrawerOpen.value;
     }
+    const asignarIdAdmi = function () {
+      if (!store.admiID) store.admiID = uuidv4();
+    };
+    onMounted(() => {
+      asignarIdAdmi();
+    });
     return {
       leftDrawerOpen,
       search,
-      storage,
-      links1: [
-        { icon: "photo", text: "Photos" },
-        { icon: "photo_album", text: "Albums" },
-        { icon: "assistant", text: "Assistant" },
-        { icon: "people", text: "Sharing" },
-        { icon: "book", text: "Photo books" },
-      ],
-      links2: [
-        { icon: "archive", text: "Archive" },
-        { icon: "delete", text: "Trash" },
-      ],
-      links3: [
-        { icon: "settings", text: "Settings" },
-        { icon: "help", text: "Help & Feedback" },
-        { icon: "get_app", text: "App Downloads" },
-      ],
-      createMenu: [
-        { icon: "photo_album", text: "Album" },
-        { icon: "people", text: "Shared Album" },
-        { icon: "movie", text: "Movie" },
-        { icon: "library_books", text: "Animation" },
-        { icon: "dashboard", text: "Collage" },
-        { icon: "book", text: "Photo book" },
-      ],
       toggleLeftDrawer,
     };
   },

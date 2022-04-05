@@ -23,7 +23,7 @@ module.exports = configure(function (ctx) {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
     // https://v2.quasar.dev/quasar-cli-webpack/boot-files
-    boot: [],
+    boot: ["uuid", "firebase"],
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-css
     css: ["app.scss"],
@@ -84,7 +84,11 @@ module.exports = configure(function (ctx) {
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-framework
     framework: {
-      config: {},
+      config: {
+        notify: {
+          /* look at QuasarConfOptions from the API card */
+        },
+      },
 
       // iconSet: 'material-icons', // Quasar icon set
       lang: "es", // Quasar language pack
@@ -97,7 +101,7 @@ module.exports = configure(function (ctx) {
       // directives: [],
 
       // Quasar plugins
-      plugins: [],
+      plugins: ["Notify"],
     },
 
     // animations: 'all', // --- includes all animations

@@ -2,10 +2,9 @@
   <div class="q-pa-md">
     <q-table
       title="Mis solicitudes"
-      :rows="rows"
+      :rows="solicitudesAtendidas"
       :columns="columns"
       row-key="name"
-      v-model:expanded="expanded"
     >
       <template v-slot:header="props">
         <q-tr :props="props">
@@ -41,59 +40,20 @@
 <script>
 const columns = [
   { name: "coordinacion", label: "Coordinacion", field: "coordinacion" },
-  { name: "tipo", label: "Tipo de problema", field: "tipo" },
-  { name: "comentarios", label: "Informacion adicional", field: "comentarios" },
-];
-
-const rows = [
+  { name: "problema", label: "Tipo de problema", field: "problema" },
   {
-    coordinacion: "Gerencia",
-    tipo: 0,
-    comentarios: "la compu no enciente",
-    enProceso: false,
-    terminada: false,
-  },
-  {
-    coordinacion: "enfermeria",
-    tipo: 1,
-    comentarios: "se daño un cable",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "RRHH",
-    tipo: 2,
-    comentarios: "ratio",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "Secretaria",
-    tipo: 1,
-    comentarios: "ratio",
-    enProceso: false,
-    terminada: true,
+    name: "comentarioAdicional",
+    label: "Informacion adicional",
+    field: "comentarioAdicional",
   },
 ];
 
 export default {
   setup() {
     return {
+      solicitudesAtendidas: store.solicitudesCompletadas,
       columns,
-      rows,
     };
-  },
-  methods: {
-    estadoSolicitud(enProceso, terminada) {
-      if (tipo == 0) {
-        return "Equipo";
-      }
-      if (tipo == 1) {
-        return "Internet";
-      } else {
-        return "otro";
-      }
-    },
   },
 };
 </script>

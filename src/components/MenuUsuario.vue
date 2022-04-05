@@ -32,18 +32,26 @@
       :ratio="16 / 9"
       style="height: 150px"
     >
-      <div class="absolute-top text-center">
-        <q-icon name="person" size="2em" />Usuario
+      <div class="absolute-bottom bg-transparent text-black">
+        <q-avatar size="56px" class="q-mb-sm">
+          <q-icon name="person" size="1.5em"
+        /></q-avatar>
+        <div class="text-weight-bold text-h6">{{ sesion.displayName }}</div>
+        <div>{{ sesion.email }}</div>
       </div>
     </q-img>
   </q-drawer>
 </template>
 
 <script>
+import { useSesion } from "stores/sesion";
 export default {
-  // name: 'ComponentName',
+  name: "MenuUsuario",
   setup() {
-    return {};
+    const sesion = useSesion().sesion;
+    return {
+      sesion,
+    };
   },
 };
 </script>
