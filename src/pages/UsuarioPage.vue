@@ -1,7 +1,5 @@
 <template>
-  <q-page class="flex flex-center">
-    <!--     <FormularioSolicitud />
-    <SolicitudesUsuario /> -->
+  <q-page>
     <router-view />
   </q-page>
 </template>

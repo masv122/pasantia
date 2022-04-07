@@ -1,8 +1,12 @@
 <template>
   <q-header elevated class="bg-cyan-8">
     <q-toolbar class="bg-negative">
-      <q-toolbar-title>Sistema de solicitud de ayuda del BAER</q-toolbar-title>
-      <q-btn flat :to="{ name: 'administrador' }" round dense icon="subject" />
+      <q-icon name="flight_takeoff" size="3em" />
+      <q-toolbar-title>{{
+        $q.screen.width > 500
+          ? "Sistema de solicitud de servicios del BAER"
+          : "SSSB"
+      }}</q-toolbar-title>
       <q-btn
         v-show="$q.screen.width < 500"
         @click="drawer = !drawer"
@@ -11,14 +15,7 @@
         dense
         icon="menu"
       />
-      <q-btn
-        flat
-        @click="cerrarSesion()"
-        round
-        dense
-        label="Cerrar sesion"
-        icon="logout"
-      />
+      <q-btn flat @click="cerrarSesion()" round dense icon="logout" />
     </q-toolbar>
   </q-header>
 </template>
@@ -35,7 +32,7 @@ export default {
       try {
         const auth = getAuth();
         await signOut(auth);
-        router.push("/");
+        router.push({ name: "ingreso" });
       } catch (error) {
         console.log(error);
       }

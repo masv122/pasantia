@@ -2,6 +2,10 @@ import { defineStore } from "pinia";
 
 export const useSesion = defineStore("sesion", {
   state: () => ({
-    sesion: {},
+    sesion: {
+      displayName: "",
+      email: "",
+      uid: "",
+    },
   }),
 });

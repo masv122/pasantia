@@ -86,6 +86,22 @@
         ]"
         hint="Email"
       />
+      <div class="q-pa-md">
+        <div class="q-gutter-sm">
+          <q-radio
+            ref="refTipoDeCuenta"
+            v-model="tipoDeCuenta"
+            :val="1"
+            label="Usuario"
+          />
+          <q-radio
+            ref="refTipoDeCuenta"
+            v-model="tipoDeCuenta"
+            :val="0"
+            label="Administrador"
+          />
+        </div>
+      </div>
       <div>
         <q-btn label="Enviar" type="submit" color="primary" />
         <q-btn
@@ -122,11 +138,13 @@ export default {
     const contraseña = ref(null);
     const reContraseña = ref(null);
     const correo = ref(null);
+    const tipoDeCuenta = ref(1);
     const refUsuario = ref(null);
     const refNombre = ref(null);
     const esVisible = ref(true);
     const refContraseña = ref(null);
     const refReContraseña = ref(null);
+    const refTipoDeCuenta = ref(null);
     const validarContraseña = computed(
       () => contraseña.value === reContraseña.value
     );
@@ -138,19 +156,22 @@ export default {
       reContraseña.value = "";
       correo.value = "";
       esVisible.value = true;
+      tipoDeCuenta.value = 1;
     };
     return {
       usuario,
+      nombre,
+      contraseña,
+      reContraseña,
+      correo,
+      tipoDeCuenta,
       refUsuario,
       refNombre,
       refContraseña,
       refReContraseña,
-      nombre,
-      contraseña,
       refCorreo,
-      reContraseña,
+      refTipoDeCuenta,
       validarContraseña,
-      correo,
       esVisible,
       onReset() {
         resetForm();
@@ -166,6 +187,7 @@ export default {
           refNombre.value.hasError ||
           refContraseña.value.hasError ||
           refReContraseña.value.hasError ||
+          refTipoDeCuenta.value.hasError ||
           refCorreo.value.hasError
         ) {
           $q.notify({
@@ -187,7 +209,7 @@ export default {
               usuario: usuario.value,
               nombre: nombre.value,
               correo: correo.value,
-              tipo: 1,
+              tipo: tipoDeCuenta.value,
             });
             $q.notify({
               color: "positive",

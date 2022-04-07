@@ -32,7 +32,7 @@
           >
             <template v-slot:append>
               <q-icon
-                :name="esVisible ? 'visibility_off' : 'visibility'"
+                :name="esVisible ? 'visibility' : 'visibility_off'"
                 class="cursor-pointer"
                 @click="esVisible = !esVisible"
               />
@@ -79,7 +79,7 @@ export default {
     const refcorreo = ref("");
     const contraseña = ref("");
     const refContraseña = ref("");
-    const esVisible = ref(false);
+    const esVisible = ref(true);
     const recuerdame = ref(false);
     const router = useRouter();
     return {

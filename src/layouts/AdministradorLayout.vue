@@ -35,15 +35,16 @@
         <q-space />
 
         <div class="q-gutter-sm row items-center no-wrap">
+          <q-btn round dense flat color="grey-8" icon="person">
+            <q-tooltip>{{ nombreAdmi }}</q-tooltip>
+          </q-btn>
           <q-btn round dense flat color="grey-8" icon="notifications">
             <q-badge color="red" text-color="white" floating> 2 </q-badge>
             <q-tooltip>Notificaciones</q-tooltip>
           </q-btn>
-          <q-btn :to="{ name: 'usuario' }" round flat>
-            <q-avatar>
-              <q-icon name="admin_panel_settings" size="2em" />
-            </q-avatar>
-            <q-tooltip>Cuenta</q-tooltip>
+          <q-btn round dense flat color="grey-8" @click="cerrarSesion()">
+            <q-icon name="logout" />
+            <q-tooltip>Salir</q-tooltip>
           </q-btn>
         </div>
       </q-toolbar>
@@ -109,26 +110,50 @@
 </template>
 
 <script>
-import { onMounted, ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
-import { admiStore } from "stores/admiStore";
+import { computed, onBeforeMount, ref } from "vue";
+import { useSesion } from "stores/sesion";
+import { useRouter } from "vue-router";
+import { getAuth, onAuthStateChanged, signOut } from "@firebase/auth";
 export default {
   name: "GooglePhotosLayout",
   setup() {
-    const store = admiStore();
     const leftDrawerOpen = ref(false);
     const search = ref("");
+    const auth = getAuth();
+    const sesion = useSesion();
+    const router = useRouter();
     function toggleLeftDrawer() {
       leftDrawerOpen.value = !leftDrawerOpen.value;
     }
-    const asignarIdAdmi = function () {
-      if (!store.admiID) store.admiID = uuidv4();
+    const nombreAdmi = computed(() =>
+      sesion.sesion ? sesion.sesion.displayName : ""
+    );
+    const authListener = () => {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          sesion.sesion = user;
+          router.push({ name: "solicitudes admi" });
+        } else {
+          router.push({ name: "ingreso" });
+        }
+      });
     };
-    onMounted(() => {
-      asignarIdAdmi();
+    const cerrarSesion = async () => {
+      try {
+        const auth = getAuth();
+        await signOut(auth);
+        router.push({ name: "ingreso" });
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    onBeforeMount(() => {
+      authListener();
     });
     return {
+      nombreAdmi,
       leftDrawerOpen,
+      cerrarSesion,
       search,
       toggleLeftDrawer,
     };
@@ -169,5 +194,5 @@ export default {
       font-weight: 500
   @media (min-width: 1024px)
     &__page-container
-      padding-left: 94px
+      padding-left: 125px
 </style>

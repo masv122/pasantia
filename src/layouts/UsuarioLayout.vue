@@ -30,8 +30,9 @@ export default {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           sesion.sesion = user;
+          router.push({ name: "crear solicitud" });
         } else {
-          router.push({ name: "/" });
+          router.push({ name: "ingreso" });
         }
       });
     };

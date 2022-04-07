@@ -1,146 +1,120 @@
 <template>
-  <div class="q-pa-md">
-    <q-table
-      grid
-      :card-container-class="cardContainerClass"
-      title="Solicitudes Realizadas"
-      :rows="solicitudes"
-      :columns="columns"
-      row-key="id"
-      hide-header
-      v-model:pagination="pagination"
-      :rows-per-page-options="rowsPerPageOptions"
-    >
-      <template v-slot:item="props">
-        <div class="q-pa-xs col-xs-12 col-sm-6 col-md-4">
-          <q-card>
-            <q-card-section class="text-center">
-              Solicitud pendiente
-              <br />
-              <strong>{{ props.row.coordinacion }}</strong>
-              <br />
-              <strong>{{ props.row.problema }}</strong>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="flex flex-center" style="font-size: 20px">
-              <div>{{ props.row.comentarioAdicional }}</div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section
-              v-show="props.row.administrador"
-              class="flex flex-center"
-              style="font-size: 20px"
-            >
-              <div>
-                {{
-                  `Tu solicitud esta siendo atendida por: ${props.row.administrador} `
-                }}
-              </div>
-            </q-card-section>
-            <q-separator />
-            <q-card-section class="flex flex-center" style="font-size: 20px">
-              <q-breadcrumbs class="text-grey">
-                <template v-slot:separator>
-                  <q-icon size="1.5em" name="chevron_right" color="primary" />
-                </template>
-                <q-breadcrumbs-el
-                  icon="hourglass_empty"
-                  :class="props.row.enProceso ? 'text-blue' : ''"
-                />
-                <q-breadcrumbs-el
-                  icon="check_circle"
-                  :class="props.row.terminada ? 'text-green' : ''"
-                />
-                <q-breadcrumbs-el icon="verified" />
-              </q-breadcrumbs>
-            </q-card-section>
-          </q-card>
-        </div>
-      </template>
-    </q-table>
-  </div>
+  <q-table
+    title="Mis solicitudes"
+    :rows="solicitudes"
+    :columns="columns"
+    row-key="enProceso"
+    grid
+    hide-header
+  >
+    <template v-slot:item="props">
+      <div
+        class="q-pa-xs col-xs-12 col-sm-6 col-md-4 col-lg-3 grid-style-transition"
+        :style="props.selected ? 'transform: scale(0.95);' : ''"
+      >
+        <q-card :class="props.selected ? 'bg-grey-2' : ''">
+          <q-card-section>
+            <q-breadcrumbs class="text-grey">
+              <template v-slot:separator>
+                <q-icon size="1.5em" name="chevron_right" color="primary" />
+              </template>
+              <q-breadcrumbs-el
+                icon="hourglass_empty"
+                :class="props.row.enProceso ? 'text-blue' : ''"
+              />
+              <q-breadcrumbs-el
+                icon="check_circle"
+                :class="props.row.terminada ? 'text-green' : ''"
+              />
+              <q-breadcrumbs-el icon="verified" />
+            </q-breadcrumbs>
+          </q-card-section>
+          <q-separator />
+          <q-list dense>
+            <q-item v-for="col in props.cols" :key="col.name">
+              <q-item-section>
+                <q-item-label>{{ col.label }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label caption>{{ col.value }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </div>
+    </template>
+  </q-table>
 </template>
 
 <script>
+import { onMounted, ref, computed, watch, reactive } from "@vue/runtime-core";
+import { useQuasar } from "quasar";
+import {
+  getDatabase,
+  ref as refdb,
+  onValue,
+  orderByChild,
+  query,
+  equalTo,
+  onChildChanged,
+} from "firebase/database";
+import { useSesion } from "stores/sesion";
 const columns = [
   { name: "coordinacion", label: "Coordinacion", field: "coordinacion" },
-  { name: "tipo", label: "Tipo de problema", field: "tipo" },
-  { name: "comentarios", label: "Informacion adicional", field: "comentarios" },
-  { name: "enproceso", label: "enproceso", field: "enproceso" },
-  { name: "terminada", label: "terminada", field: "terminada" },
-];
-
-const rows = [
+  { name: "problema", label: "Tipo de problema", field: "problema" },
   {
-    coordinacion: "Gerencia",
-    tipo: 0,
-    comentarios: "la compu no enciente",
-    enProceso: false,
-    terminada: false,
-  },
-  {
-    coordinacion: "enfermeria",
-    tipo: 1,
-    comentarios: "se daño un cable",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "RRHH",
-    tipo: 2,
-    comentarios: "ratio",
-    enProceso: true,
-    terminada: false,
-  },
-  {
-    coordinacion: "Secretaria",
-    tipo: 1,
-    comentarios: "ratio",
-    enProceso: false,
-    terminada: true,
+    name: "comentarioAdicional",
+    label: "Informacion adicional",
+    field: "comentarioAdicional",
   },
 ];
 
 export default {
   setup() {
+    const db = getDatabase();
+    const $q = useQuasar();
+    const sesion = useSesion().sesion;
+    const solicitudes = reactive([]);
+    onMounted(() => {
+      var redb = query(
+        refdb(db, "solicitudes/"),
+        orderByChild("usuario"),
+        equalTo(sesion.uid)
+      );
+      onValue(
+        redb,
+        (snapshot) => {
+          snapshot.forEach((childSnapshot) => {
+            var solicitud = childSnapshot.val();
+            solicitud.key = childSnapshot.key;
+            solicitudes.push(solicitud);
+          });
+        },
+        {
+          onlyOnce: true,
+        }
+      );
+      onChildChanged(redb, (data) => {
+        const refSolicitudes = solicitudes;
+        const posicion = refSolicitudes.findIndex(
+          (soli) => soli.key === data.key
+        );
+        solicitudes[posicion] = data.val();
+        console.log(data.key);
+      });
+    });
     return {
-      solicitudes: store.solicitudes,
+      filter: ref(""),
       columns,
+      rowsPerPageOptions: computed(() => {
+        return $q.screen.gt.xs ? ($q.screen.gt.sm ? [3, 6, 9] : [3, 6]) : [3];
+      }),
+      cardContainerClass: computed(() => {
+        return $q.screen.gt.xs
+          ? "grid-masonry grid-masonry--" + ($q.screen.gt.sm ? "3" : "2")
+          : null;
+      }),
     };
   },
 };
 </script>
-
-<style lang="sass">
-.grid-masonry
-  flex-direction: column
-  height: 700px
-
-  &--2
-    > div
-      &:nth-child(2n + 1)
-        order: 1
-      &:nth-child(2n)
-        order: 2
-
-    &:before
-      content: ''
-      flex: 1 0 100% !important
-      width: 0 !important
-      order: 1
-  &--3
-    > div
-      &:nth-child(3n + 1)
-        order: 1
-      &:nth-child(3n + 2)
-        order: 2
-      &:nth-child(3n)
-        order: 3
-
-    &:before,
-    &:after
-      content: ''
-      flex: 1 0 100% !important
-      width: 0 !important
-      order: 2
-</style>

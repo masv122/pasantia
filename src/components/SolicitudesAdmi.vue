@@ -1,148 +1,165 @@
 <template>
-  <div class="q-pa-md">
-    <q-table
-      grid
-      :card-container-class="cardContainerClass"
-      title="Solicitudes disponibles"
-      :rows="solicitudes"
-      :columns="columns"
-      row-key="name"
-      :filter="filter"
-      hide-header
-      v-model:pagination="pagination"
-      :rows-per-page-options="rowsPerPageOptions"
-      no-data-label="Sin solicitudes por atender"
-    >
-      <template v-slot:top-right>
-        <q-input
-          borderless
-          dense
-          debounce="300"
-          v-model="filter"
-          placeholder="Buscar"
-        >
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
-      </template>
-      <template v-slot:item="props">
-        <div class="q-pa-xs col-xs-12 col-sm-6 col-md-4">
-          <q-card class="my-card" flat bordered>
-            <q-card-section horizontal>
-              <q-card-section class="q-pt-xs">
-                <div class="text-overline">{{ props.row.coordinacion }}</div>
-                <div class="text-h5 q-mt-sm q-mb-xs">
-                  {{ props.row.problema }}
-                </div>
-                <div class="text-caption text-grey">
-                  {{
-                    props.row.comentarioAdicional
-                      ? props.row.comentarioAdicional
-                      : "Sin comentarios adicionales"
-                  }}
-                </div>
-              </q-card-section>
-
-              <q-card-section class="col-5 flex flex-center">
-                <q-img
-                  class="rounded-borders"
-                  src="https://cdn.quasar.dev/img/parallax2.jpg"
-                />
-              </q-card-section>
-            </q-card-section>
-            <q-separator />
-            <q-card-section>
-              {{
-                props.row.administrador
-                  ? `Esta solicitud esta siendo atendida por: ${props.row.administrador}`
-                  : "Solicitud sin atender"
-              }}
-            </q-card-section>
-
-            <q-separator />
-
-            <q-card-actions>
-              <q-toggle
-                v-show="
-                  (!props.row.enProceso && !props.row.terminada) ||
-                  (props.row.enProceso && !props.row.terminada)
-                "
-                v-model="props.row.enProceso"
-                icon="alarm"
-                @click="props.row.administrador = admiID"
-              />
-              <q-toggle
-                v-show="props.row.enProceso"
-                v-model="props.row.terminada"
-                checked-icon="check"
-                color="green"
-                unchecked-icon="clear"
-              />
-            </q-card-actions>
-          </q-card>
-        </div>
-      </template>
-    </q-table>
-  </div>
+  <q-table
+    title="Mis solicitudes"
+    :rows="solicitudes"
+    :columns="columns"
+    row-key="enProceso"
+    grid
+    hide-header
+  >
+    <template v-slot:item="props">
+      <div
+        class="q-pa-xs col-xs-12 col-sm-6 col-md-4 col-lg-3 grid-style-transition"
+        :style="props.selected ? 'transform: scale(0.95);' : ''"
+      >
+        <q-card :class="props.selected ? 'bg-grey-2' : ''">
+          <q-card-actions>
+            <q-toggle
+              v-show="
+                (!props.row.enProceso && !props.row.terminada) ||
+                (props.row.enProceso && !props.row.terminada)
+              "
+              v-model="props.row.enProceso"
+              icon="alarm"
+              @click="cambiarProceso(props.row)"
+            />
+            <q-toggle
+              v-show="props.row.enProceso || props.row.terminada"
+              v-model="props.row.terminada"
+              checked-icon="check"
+              color="green"
+              :disable="props.row.terminada"
+              unchecked-icon="clear"
+              @click="
+                props.row.enProceso = !props.row.enProceso;
+                cambiarProceso(props.row);
+              "
+            />
+          </q-card-actions>
+          <q-separator />
+          <q-list dense>
+            <q-item v-for="col in props.cols" :key="col.name">
+              <q-item-section>
+                <q-item-label>{{ col.label }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label caption>{{ col.value }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+          <q-separator />
+          <q-card-actions v-show="props.row.enProceso">
+            <div class="q-ml-xs">
+              <!-- Siendo atendido por: {{ administrador(props.row) }} -->
+            </div>
+          </q-card-actions>
+        </q-card>
+      </div>
+    </template>
+  </q-table>
+  {{ administradores }}
 </template>
 
 <script>
+import { onMounted, ref, computed, watch, reactive } from "@vue/runtime-core";
+import { useQuasar } from "quasar";
+import {
+  getDatabase,
+  ref as refdb,
+  onValue,
+  onChildChanged,
+  update,
+  child,
+  get,
+} from "firebase/database";
+import { useSesion } from "src/stores/sesion";
 const columns = [
   { name: "coordinacion", label: "Coordinacion", field: "coordinacion" },
-  { name: "tipo", label: "Tipo de problema", field: "tipo" },
-  { name: "comentarios", label: "Informacion adicional", field: "comentarios" },
-  { name: "enproceso", label: "enproceso", field: "enproceso" },
-  { name: "terminada", label: "terminada", field: "terminada" },
+  { name: "problema", label: "Tipo de problema", field: "problema" },
+  {
+    name: "comentarioAdicional",
+    label: "Informacion adicional",
+    field: "comentarioAdicional",
+  },
 ];
 
-import { admiStore } from "stores/admiStore";
-import { useQuasar } from "quasar";
-import { ref } from "@vue/reactivity";
-import { computed, onMounted, watch } from "@vue/runtime-core";
 export default {
   setup() {
+    const db = getDatabase();
     const $q = useQuasar();
-    const useAdmiStore = admiStore();
-    const filter = ref("");
-    function getItemsPerPage() {
-      if ($q.screen.lt.sm) {
-        return 3;
-      }
-      if ($q.screen.lt.md) {
-        return 6;
-      }
-      return 9;
-    }
-    const pagination = ref({
-      page: 1,
-      rowsPerPage: getItemsPerPage(),
+    const solicitudes = reactive([]);
+    const sesion = useSesion();
+    const administradores = reactive([]);
+    onMounted(() => {
+      var redb = refdb(db, "solicitudes/");
+      onValue(
+        redb,
+        (snapshot) => {
+          snapshot.forEach((childSnapshot) => {
+            if (!childSnapshot.val().terminada) {
+              var solicitud = childSnapshot.val();
+              solicitud.key = childSnapshot.key;
+              solicitudes.push(solicitud);
+            }
+          });
+        },
+        {
+          onlyOnce: true,
+        }
+      );
+      solicitudes.forEach((s) => {
+        if (s.administrador) {
+          const administrador = buscarAdministrador(s.administrador);
+          administradores.push(administrador);
+        }
+      });
+      onChildChanged(redb, (data) => {
+        const refSolicitudes = solicitudes;
+        const posicion = refSolicitudes.findIndex(
+          (soli) => soli.key === data.key
+        );
+        if (data.val().terminada) {
+          solicitudes.length;
+          solicitudes.splice(posicion, 1);
+        } else {
+          solicitudes[posicion] = data.val();
+        }
+      });
+      console.log(solicitudes);
     });
 
-    watch(
-      () => $q.screen.name,
-      () => {
-        pagination.value.rowsPerPage = getItemsPerPage();
+    const cambiarProceso = (solicitud) => {
+      var redb = refdb(db, "solicitudes/" + solicitud.key);
+      if (solicitud.enProceso) solicitud.administrador = sesion.sesion.uid;
+      if (!solicitud.terminada && !solicitud.enProceso)
+        solicitud.administrador = "";
+      update(redb, solicitud);
+    };
+
+    const buscarAdministrador = async (id) => {
+      try {
+        const resultado = await get(
+          child(refdb(getDatabase()), `usuarios/${id}`)
+        );
+        if (resultado.exists()) {
+          return resultado.val().nombre;
+        } else {
+          return "error al buscar";
+        }
+      } catch (error) {
+        return error;
       }
-    );
+    };
+
     return {
-      admiID: useAdmiStore.admiID,
-      solicitudes: store.solicitudesSinCompletar,
-      filter,
-      store,
-      pagination,
+      sesion,
+      buscarAdministrador,
+      administradores,
       columns,
-      cardContainerClass: computed(() => {
-        return $q.screen.gt.xs
-          ? "grid-masonry grid-masonry--" + ($q.screen.gt.sm ? "3" : "2")
-          : null;
-      }),
-      rowsPerPageOptions: computed(() => {
-        return $q.screen.gt.xs ? ($q.screen.gt.sm ? [3, 6, 9] : [3, 6]) : [3];
-      }),
+      cambiarProceso,
+      solicitudes,
     };
   },
-  methods: {},
 };
 </script>
 
