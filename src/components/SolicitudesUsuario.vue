@@ -40,6 +40,11 @@
               </q-item-section>
             </q-item>
           </q-list>
+          <q-separator />
+          <administrador-comp
+            :id="props.row.administrador"
+            v-show="props.row.enProceso || props.row.terminada"
+          />
         </q-card>
       </div>
     </template>
@@ -59,6 +64,7 @@ import {
   onChildChanged,
 } from "firebase/database";
 import { useSesion } from "stores/sesion";
+import AdministradorComp from "components/AdministradorComp.vue";
 const columns = [
   { name: "coordinacion", label: "Coordinacion", field: "coordinacion" },
   { name: "problema", label: "Tipo de problema", field: "problema" },
@@ -70,6 +76,9 @@ const columns = [
 ];
 
 export default {
+  components: {
+    AdministradorComp,
+  },
   setup() {
     const db = getDatabase();
     const $q = useQuasar();
@@ -100,20 +109,11 @@ export default {
           (soli) => soli.key === data.key
         );
         solicitudes[posicion] = data.val();
-        console.log(data.key);
       });
     });
     return {
-      filter: ref(""),
       columns,
-      rowsPerPageOptions: computed(() => {
-        return $q.screen.gt.xs ? ($q.screen.gt.sm ? [3, 6, 9] : [3, 6]) : [3];
-      }),
-      cardContainerClass: computed(() => {
-        return $q.screen.gt.xs
-          ? "grid-masonry grid-masonry--" + ($q.screen.gt.sm ? "3" : "2")
-          : null;
-      }),
+      solicitudes,
     };
   },
 };

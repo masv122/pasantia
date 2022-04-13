@@ -6,12 +6,12 @@
       :to="{ name: 'crear usuario' }"
       exact
     />
-    <q-route-tab
+    <!--     <q-route-tab
       label="Gestionar Usuario"
       icon="manage_accounts"
-      :to="{ name: 'gestion de usuario' }"
+      :to="{ name: 'gestion de usuarios' }"
       exact
-    />
+    /> -->
   </q-tabs>
   <div class="flex flex-center">
     <router-view />

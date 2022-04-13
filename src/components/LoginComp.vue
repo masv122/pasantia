@@ -39,7 +39,11 @@
             </template>
           </q-input>
 
-          <q-toggle color="negative" v-model="recuerdame" label="Recuerdame" />
+          <q-toggle
+            color="negative"
+            v-model="admi"
+            label="¿Eres Administrador?"
+          />
 
           <div>
             <q-btn
@@ -65,7 +69,7 @@
 <script>
 import { ref } from "@vue/reactivity";
 import { useQuasar } from "quasar";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { getDatabase, ref as fireref, child, get } from "firebase/database";
 import { useRouter } from "vue-router";
 
@@ -80,7 +84,7 @@ export default {
     const contraseña = ref("");
     const refContraseña = ref("");
     const esVisible = ref(true);
-    const recuerdame = ref(false);
+    const admi = ref(false);
     const router = useRouter();
     return {
       correo,
@@ -88,7 +92,7 @@ export default {
       contraseña,
       refContraseña,
       esVisible,
-      recuerdame,
+      admi,
       async onSubmit() {
         refcorreo.value.validate();
         refContraseña.value.validate();
@@ -105,17 +109,22 @@ export default {
               contraseña.value
             );
             const user = userCredential.user;
-            const resultado = await get(child(dbRef, `usuarios/${user.uid}`));
+            const resultado = await get(
+              child(
+                dbRef,
+                `usuarios/${admi.value ? "admis" : "trabajadores"}/${user.uid}`
+              )
+            );
             if (resultado.exists()) {
-              switch (resultado.val().tipo) {
-                case 0:
-                  router.push({ name: "administrador" });
-                  break;
-                case 1:
-                  router.push({ name: "usuario" });
-                default:
-                  break;
-              }
+              if (admi.value) router.push({ name: "administrador" });
+              else router.push({ name: "usuario" });
+            } else {
+              const auth = getAuth();
+              await signOut(auth);
+              $q.notify({
+                color: "negative",
+                message: "Usuario no encontrado",
+              });
             }
           } catch (error) {
             const errorCode = error.code;

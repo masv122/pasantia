@@ -38,9 +38,27 @@
           <q-btn round dense flat color="grey-8" icon="person">
             <q-tooltip>{{ nombreAdmi }}</q-tooltip>
           </q-btn>
-          <q-btn round dense flat color="grey-8" icon="notifications">
-            <q-badge color="red" text-color="white" floating> 2 </q-badge>
-            <q-tooltip>Notificaciones</q-tooltip>
+          <q-btn
+            round
+            dense
+            @click="notificacionSolicitudNueva = 0"
+            flat
+            color="grey-8"
+            icon="notifications"
+          >
+            <q-badge
+              v-show="notificacionSolicitudNueva > 0"
+              color="red"
+              text-color="white"
+              floating
+            >
+              {{ notificacionSolicitudNueva }}
+            </q-badge>
+            <q-tooltip>{{
+              notificacionSolicitudNueva > 0
+                ? "Borrar notificaciones"
+                : "Notificaciones"
+            }}</q-tooltip>
           </q-btn>
           <q-btn round dense flat color="grey-8" @click="cerrarSesion()">
             <q-icon name="logout" />
@@ -85,8 +103,9 @@
               color="red"
               text-color="white"
               style="top: 8px; right: 16px"
+              @click="notificacionSolicitudesAdmi = 0"
             >
-              1
+              {{ notificacionSolicitudesAdmi }}
             </q-badge>
           </q-btn>
 
@@ -110,14 +129,27 @@
 </template>
 
 <script>
-import { computed, onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, onMounted, ref } from "vue";
 import { useSesion } from "stores/sesion";
 import { useRouter } from "vue-router";
 import { getAuth, onAuthStateChanged, signOut } from "@firebase/auth";
+import {
+  getDatabase,
+  ref as refdb,
+  onValue,
+  query,
+  orderByChild,
+  equalTo,
+} from "firebase/database";
 export default {
   name: "GooglePhotosLayout",
   setup() {
+    const db = getDatabase();
+    const redb = refdb(db, "solicitudes/");
+
     const leftDrawerOpen = ref(false);
+    const notificacionSolicitudNueva = ref(-1);
+    const notificacionSolicitudesAdmi = ref(0);
     const search = ref("");
     const auth = getAuth();
     const sesion = useSesion();
@@ -150,11 +182,26 @@ export default {
     onBeforeMount(() => {
       authListener();
     });
+    onMounted(() => {
+      onValue(redb, () => {
+        notificacionSolicitudNueva.value++;
+      });
+      const redb2 = query(
+        redb,
+        orderByChild("administrador"),
+        equalTo(sesion.sesion.uid)
+      );
+      onValue(redb2, () => {
+        notificacionSolicitudesAdmi.value++;
+      });
+    });
     return {
       nombreAdmi,
       leftDrawerOpen,
       cerrarSesion,
       search,
+      notificacionSolicitudNueva,
+      notificacionSolicitudesAdmi,
       toggleLeftDrawer,
     };
   },

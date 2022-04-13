@@ -13,25 +13,52 @@
         :style="props.selected ? 'transform: scale(0.95);' : ''"
       >
         <q-card :class="props.selected ? 'bg-grey-2' : ''">
-          <q-card-actions>
-            <q-toggle
+          <q-card-section
+            v-if="
+              props.row.administrador !== sesion.sesion.uid &&
+              props.row.administrador
+            "
+          >
+            <q-breadcrumbs class="text-grey">
+              <template v-slot:separator>
+                <q-icon size="1.5em" name="chevron_right" color="primary" />
+              </template>
+              <q-breadcrumbs-el
+                icon="hourglass_empty"
+                :class="props.row.enProceso ? 'text-blue' : ''"
+              />
+              <q-breadcrumbs-el
+                icon="check_circle"
+                :class="props.row.terminada ? 'text-green' : ''"
+              />
+              s-el icon="verified" />
+            </q-breadcrumbs>
+          </q-card-section>
+          <q-card-actions align="right" v-else>
+            <q-btn
+              :outline="props.row.enProceso"
+              :color="props.row.enProceso ? 'negative' : 'primary'"
+              :label="props.row.enProceso ? 'rechazar' : 'Aceptar'"
               v-show="
                 (!props.row.enProceso && !props.row.terminada) ||
                 (props.row.enProceso && !props.row.terminada)
               "
-              v-model="props.row.enProceso"
-              icon="alarm"
-              @click="cambiarProceso(props.row)"
+              @click="
+                props.row.enProceso = !props.row.enProceso;
+                cambiarProceso(props.row);
+              "
             />
-            <q-toggle
+            <q-btn
+              color="green"
+              label="Completar"
               v-show="props.row.enProceso || props.row.terminada"
               v-model="props.row.terminada"
               checked-icon="check"
-              color="green"
               :disable="props.row.terminada"
               unchecked-icon="clear"
               @click="
                 props.row.enProceso = !props.row.enProceso;
+                props.row.terminada = !props.row.terminada;
                 cambiarProceso(props.row);
               "
             />
@@ -48,31 +75,28 @@
             </q-item>
           </q-list>
           <q-separator />
-          <q-card-actions v-show="props.row.enProceso">
-            <div class="q-ml-xs">
-              <!-- Siendo atendido por: {{ administrador(props.row) }} -->
-            </div>
-          </q-card-actions>
+          <administrador-comp
+            :id="props.row.administrador"
+            v-show="props.row.enProceso"
+          />
         </q-card>
       </div>
     </template>
   </q-table>
-  {{ administradores }}
 </template>
 
 <script>
-import { onMounted, ref, computed, watch, reactive } from "@vue/runtime-core";
-import { useQuasar } from "quasar";
+import { onMounted, reactive } from "@vue/runtime-core";
 import {
   getDatabase,
   ref as refdb,
   onValue,
   onChildChanged,
+  onChildAdded,
   update,
-  child,
-  get,
 } from "firebase/database";
 import { useSesion } from "src/stores/sesion";
+import AdministradorComp from "components/AdministradorComp.vue";
 const columns = [
   { name: "coordinacion", label: "Coordinacion", field: "coordinacion" },
   { name: "problema", label: "Tipo de problema", field: "problema" },
@@ -84,14 +108,15 @@ const columns = [
 ];
 
 export default {
+  components: {
+    AdministradorComp,
+  },
   setup() {
     const db = getDatabase();
-    const $q = useQuasar();
     const solicitudes = reactive([]);
     const sesion = useSesion();
-    const administradores = reactive([]);
+    const redb = refdb(db, "solicitudes/");
     onMounted(() => {
-      var redb = refdb(db, "solicitudes/");
       onValue(
         redb,
         (snapshot) => {
@@ -107,12 +132,20 @@ export default {
           onlyOnce: true,
         }
       );
-      solicitudes.forEach((s) => {
-        if (s.administrador) {
-          const administrador = buscarAdministrador(s.administrador);
-          administradores.push(administrador);
+      onChildAdded(redb, (data) => {
+        const refSolicitudes = solicitudes;
+        const posicion = refSolicitudes.findIndex(
+          (soli) => soli.key === data.key
+        );
+        if (
+          posicion === -1 &&
+          !data.val().terminada &&
+          solicitudes.length !== 0
+        ) {
+          solicitudes.push(data.val());
         }
       });
+
       onChildChanged(redb, (data) => {
         const refSolicitudes = solicitudes;
         const posicion = refSolicitudes.findIndex(
@@ -125,7 +158,6 @@ export default {
           solicitudes[posicion] = data.val();
         }
       });
-      console.log(solicitudes);
     });
 
     const cambiarProceso = (solicitud) => {
@@ -135,26 +167,8 @@ export default {
         solicitud.administrador = "";
       update(redb, solicitud);
     };
-
-    const buscarAdministrador = async (id) => {
-      try {
-        const resultado = await get(
-          child(refdb(getDatabase()), `usuarios/${id}`)
-        );
-        if (resultado.exists()) {
-          return resultado.val().nombre;
-        } else {
-          return "error al buscar";
-        }
-      } catch (error) {
-        return error;
-      }
-    };
-
     return {
       sesion,
-      buscarAdministrador,
-      administradores,
       columns,
       cambiarProceso,
       solicitudes,

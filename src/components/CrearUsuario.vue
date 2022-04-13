@@ -7,18 +7,19 @@
     >
       <div class="text-h5">Complete los datos</div>
       <q-separator inset />
-      <q-input
-        filled
-        ref="refUsuario"
-        v-model="usuario"
-        label="Usuario *"
-        hint="Ingrese la cedula del usuario"
-        lazy-rules
-        :rules="[
-          (val) => (val && val.length > 0) || 'Porfavor ingrese el usuario',
-        ]"
-      />
 
+      <q-input
+        v-model="correo"
+        label="Correo"
+        ref="refCorreo"
+        filled
+        lazy-rules
+        type="email"
+        :rules="[
+          (val) => (val && val.length > 0) || 'Porfavor ingrese el correo',
+        ]"
+        hint="Email"
+      />
       <q-input
         filled
         v-model="nombre"
@@ -73,19 +74,6 @@
           />
         </template>
       </q-input>
-
-      <q-input
-        v-model="correo"
-        label="Correo"
-        ref="refCorreo"
-        filled
-        lazy-rules
-        type="email"
-        :rules="[
-          (val) => (val && val.length > 0) || 'Porfavor ingrese el correo',
-        ]"
-        hint="Email"
-      />
       <div class="q-pa-md">
         <div class="q-gutter-sm">
           <q-radio
@@ -133,7 +121,6 @@ export default {
     const $q = useQuasar();
     const db = getDatabase();
     const auth = getAuth();
-    const usuario = ref(null);
     const nombre = ref(null);
     const contraseña = ref(null);
     const reContraseña = ref(null);
@@ -150,7 +137,6 @@ export default {
     );
     const refCorreo = ref(null);
     const resetForm = function () {
-      usuario.value = "";
       nombre.value = "";
       contraseña.value = "";
       reContraseña.value = "";
@@ -159,7 +145,6 @@ export default {
       tipoDeCuenta.value = 1;
     };
     return {
-      usuario,
       nombre,
       contraseña,
       reContraseña,
@@ -177,13 +162,11 @@ export default {
         resetForm();
       },
       async onSubmit() {
-        refUsuario.value.validate();
         refNombre.value.validate();
         refContraseña.value.validate();
         refReContraseña.value.validate();
         refCorreo.value.validate();
         if (
-          refUsuario.value.hasError ||
           refNombre.value.hasError ||
           refContraseña.value.hasError ||
           refReContraseña.value.hasError ||
@@ -205,12 +188,18 @@ export default {
             await updateProfile(user, {
               displayName: nombre.value,
             });
-            await set(refdb(db, "usuarios/" + user.uid), {
-              usuario: usuario.value,
-              nombre: nombre.value,
-              correo: correo.value,
-              tipo: tipoDeCuenta.value,
-            });
+            await set(
+              refdb(
+                db,
+                `usuarios/${
+                  tipoDeCuenta.value === 0 ? "admis" : "trabajadores"
+                }/${user.uid}`
+              ),
+              {
+                nombre: nombre.value,
+                correo: correo.value,
+              }
+            );
             $q.notify({
               color: "positive",
               message: "Usuario Creado",

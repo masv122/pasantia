@@ -18,6 +18,7 @@ const routes = [
   {
     path: "/usuario",
     name: "usuario",
+    redirect: { name: "crear solicitud" },
     component: () => import("layouts/UsuarioLayout.vue"),
     children: [
       {
@@ -42,6 +43,7 @@ const routes = [
   {
     path: "/administrador",
     name: "administrador",
+    redirect: { name: "solicitudes admi" },
     component: () => import("layouts/AdministradorLayout.vue"),
     children: [
       {
@@ -72,8 +74,8 @@ const routes = [
               },
               {
                 path: "gestion-de-usuario",
-                name: "gestion de usuario",
-                component: () => import("components/GestionDeUsuario.vue"),
+                name: "gestion de usuarios",
+                component: () => import("src/components/GestionDeUsuarios.vue"),
               },
             ],
           },
