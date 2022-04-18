@@ -9,8 +9,7 @@
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No test specified\" && exit 0",
-    "build": "quasar build",
-    "start": "node server.js"
+    "deploy": "push-dir --dir=dist/spa --remote=gh-pages --branch=master"
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
@@ -20,6 +19,7 @@
     "firebase": "^9.6.10",
     "firebaseui": "^6.0.1",
     "pinia": "^2.0.11",
+    "push-dir": "^0.4.1",
     "quasar": "^2.6.0",
     "serve-static": "^1.15.0",
     "uuid": "^8.3.2",
